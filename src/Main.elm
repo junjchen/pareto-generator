@@ -14,61 +14,62 @@ type alias Row = {
 }
 
 type alias Model = {
-    currentName: Maybe String,
-    currentValue: Maybe String,
-    currentErrors: List Err,
+    cn: Maybe String,
+    cv: Maybe String,
+    e: List Error,
     rows: List Row
 }
 
-type Msg = AddRow | CurrentNameChange String | CurrentValueChange String
-type Err = NameIsEmpty | ValueIsEmpty | ValueIsInvalid
+type Msg = AddRow | NameChange String | ValueChange String
+
+type Error = MissingName | MissingValue | InvalidValue
 
 model : Model
 model = Model Nothing Nothing [] []
 
+updateName: Model -> String -> Model
+updateName model n = { model | cn = if String.isEmpty n then Nothing else Just n }
+
+updateValue: Model -> String -> Model
+updateValue model v = { model | cv = if String.isEmpty v then Nothing else Just v }
+
+validateName: Model -> Result Error String
+validateName model =
+    case model.cn of
+        Just n -> Ok n
+        Nothing -> Err MissingName
+
+validateValue: Model -> Result Error Float
+validateValue model =
+    case model.cv of
+        Just v ->
+            case String.toFloat v of
+                Ok fv -> Ok fv
+                Err msg -> Err InvalidValue
+        Nothing -> Err MissingValue
+
+validate: Model -> Result ( List Error ) ( String, Float )
+validate model =
+    case ( validateName model, validateValue model ) of 
+        ( Err e1, Err e2 ) -> Err [ e1, e2 ]
+        ( Err e, _ ) -> Err [ e ]
+        ( _, Err e ) -> Err [ e ]
+        ( Ok n, Ok v ) -> Ok ( n, v )
+
 update: Msg -> Model -> Model
 update msg model = 
     case msg of
-        CurrentNameChange n -> { model | currentName = Just n }
-        CurrentValueChange v -> { model | currentValue = Just v }
-        AddRow ->
-            let
-                m: Model
-                m = checkRequiredFields model
-            in
-                if ( List.member NameIsEmpty m.currentErrors ) || ( List.member ValueIsEmpty m.currentErrors ) then
-                    m
-                else
-                    case String.toFloat ( withDefault "-1" m.currentValue ) of
-                        Err msg -> { m | currentErrors = ValueIsInvalid :: m.currentErrors }
-                        Ok v -> { m | rows = ( Row ( withDefault "" m.currentName ) v ) :: m.rows }
-                    
-clearErrors: Model -> Model
-clearErrors model =
-    {
-        model | currentErrors = []
-    }
-
-checkCurrentNameEmpty: Model -> Model
-checkCurrentNameEmpty model =
-    { 
-        model | currentErrors =
-            case model.currentName of
-                Just n -> model.currentErrors
-                Nothing -> NameIsEmpty :: model.currentErrors
-    }
-
-checkCurrentValueEmpty: Model -> Model
-checkCurrentValueEmpty model =
-    {
-        model | currentErrors =
-            case model.currentValue of
-                Just n -> model.currentErrors
-                Nothing -> ValueIsEmpty :: model.currentErrors
-    }
-
-checkRequiredFields: Model -> Model
-checkRequiredFields = clearErrors >> checkCurrentNameEmpty >> checkCurrentValueEmpty
+        NameChange n -> updateName model n
+        ValueChange v -> updateValue model v
+        AddRow -> 
+            case validate model of
+                Ok ( n, v ) -> { model |
+                    cn = Nothing,
+                    cv = Nothing,
+                    e = [],
+                    rows = ( Row n v ) :: model.rows
+                }
+                Err e -> { model | e = e }
 
 view: Model -> Html Msg
 view model = div []
@@ -89,12 +90,12 @@ view model = div []
         ],
         div [] [
             label [] [ text "name" ],
-            input [ value ( withDefault "" model.currentName ), onInput CurrentNameChange ] [],
+            input [ value ( withDefault "" model.cn ), onInput NameChange ] [],
             label [] [ text "value" ],
-            input [ value ( withDefault "" model.currentValue ), onInput CurrentValueChange ] [],
+            input [ value ( withDefault "" model.cv ), onInput ValueChange ] [],
             button [ onClick AddRow ] [ text "OK" ],
-            strong [] [ text ( if List.member NameIsEmpty model.currentErrors then "NameIsEmpty" else "" ) ],
-            strong [] [ text ( if List.member ValueIsEmpty model.currentErrors then "ValueIsEmpty" else "" ) ],
-            strong [] [ text ( if List.member ValueIsInvalid model.currentErrors then "ValueIsInvalid" else "" ) ]
+            strong [] [ text ( if List.member MissingName model.e then "NameIsEmpty" else "" ) ],
+            strong [] [ text ( if List.member MissingValue model.e then "ValueIsEmpty" else "" ) ],
+            strong [] [ text ( if List.member InvalidValue model.e then "ValueIsInvalid" else "" ) ]
         ]
     ]
