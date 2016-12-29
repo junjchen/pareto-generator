@@ -1,7 +1,8 @@
 import Html exposing (..)
-import Html.Attributes exposing ( value )
-import Html.Events exposing ( onInput, onClick )
+import Html.Attributes exposing ( value, class, type_ )
+import Html.Events exposing ( onSubmit, onInput, onClick )
 import Maybe exposing ( Maybe(..),  withDefault )
+import Markdown exposing ( toHtml )
 import String
 import List
 
@@ -20,7 +21,7 @@ type alias Model = {
     rows: List Row
 }
 
-type Msg = AddRow | NameChange String | ValueChange String
+type Msg = AddRow | NameChange String | ValueChange String | DeleteRow Row
 
 type Error = MissingName | MissingValue | InvalidValue
 
@@ -56,6 +57,9 @@ validate model =
         ( _, Err e ) -> Err [ e ]
         ( Ok n, Ok v ) -> Ok ( n, v )
 
+toTwoDecimalPercentage: Float -> Float
+toTwoDecimalPercentage f = ( toFloat <| round ( f * 1000 )  ) / 10
+
 update: Msg -> Model -> Model
 update msg model = 
     case msg of
@@ -70,32 +74,72 @@ update msg model =
                     rows = ( Row n v ) :: model.rows
                 }
                 Err e -> { model | e = e }
+        DeleteRow r -> { model | rows = List.filter (\ x-> x /= r ) model.rows }
 
-view: Model -> Html Msg
-view model = div []
-    [
-        table [] [
+
+theTable: ( Row -> Msg ) -> Model -> Html Msg
+theTable deleteRow model =
+    let
+        total: Float
+        total = List.foldr (\r sum -> sum + r.v ) 0 model.rows
+    in
+        table [ class "table table-striped" ] [
             thead [] [
                 tr [] [
                     th [] [ text "name" ],
-                    th [] [ text "value" ]
+                    th [] [ text "value" ],
+                    th [] [ text "percentage" ],
+                    th [] []
                 ]
             ],
             tbody [] ( 
-                List.map (\x -> tr [] [
+                List.map (\ x -> tr [] [
                     td [] [ text x.n ],
-                    td [] [ text ( toString x.v ) ]
+                    td [] [ text <| toString x.v ],
+                    td [] [ text ( ( toString <| toTwoDecimalPercentage ( x.v / total ) ) ++ "%" ) ],
+                    td [] [ button [ class "close", onClick ( deleteRow x ) ] [ span [] [ toHtml [] "&times;" ] ] ]
                 ]) model.rows
             )
-        ],
-        div [] [
-            label [] [ text "name" ],
-            input [ value ( withDefault "" model.cn ), onInput NameChange ] [],
-            label [] [ text "value" ],
-            input [ value ( withDefault "" model.cv ), onInput ValueChange ] [],
-            button [ onClick AddRow ] [ text "OK" ],
-            strong [] [ text ( if List.member MissingName model.e then "NameIsEmpty" else "" ) ],
-            strong [] [ text ( if List.member MissingValue model.e then "ValueIsEmpty" else "" ) ],
-            strong [] [ text ( if List.member InvalidValue model.e then "ValueIsInvalid" else "" ) ]
         ]
+
+theForm: ( Msg, String -> Msg, String -> Msg ) -> Model -> Html Msg
+theForm ( addRow, nameChange, valueChange ) model =
+    form [ onSubmit addRow ] [
+        div [ class "form-group" ] [
+            label [] [ text "name" ],
+            input [ class "form-control", value ( withDefault "" model.cn ), onInput nameChange ] []
+        ],
+        div [ class "form-group" ] [
+            label [] [ text "value" ],
+            input [ class "form-control", value ( withDefault "" model.cv ), onInput valueChange ] []
+        ],
+        button [ class "btn btn-default", type_ "submit" ] [ text "OK" ]
+    ]
+
+theNotifications: Model -> Html Msg
+theNotifications model =
+    div [] (
+        List.map (\ e -> 
+            p [ class "bg-danger" ] [
+                strong [] [
+                    text ( case e of
+                        MissingName -> "Name is missing"
+                        MissingValue -> "Value is missing"
+                        InvalidValue -> "Value is invalid"
+                    )
+                ]
+            ]
+        ) model.e
+    )
+
+
+view: Model -> Html Msg
+view model =
+    div [ class "container" ] [
+        div [ class "col-md-3 example-form" ] [
+            theTable DeleteRow model,
+            theForm ( AddRow, NameChange, ValueChange ) model,
+            theNotifications model
+       ],
+       div [ class "col-md-9" ] []
     ]
