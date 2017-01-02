@@ -127,7 +127,7 @@ theForm ( addRow, nameChange, valueChange ) model =
             label [] [ text "value" ],
             input [ class "form-control", value ( withDefault "" model.cv ), onInput valueChange ] []
         ],
-        button [ class "btn btn-default", type_ "submit" ] [ text "OK" ]
+        button [ class "btn btn-default", type_ "submit" ] [ text "Add" ]
     ]
 
 theNotifications: Model -> Html Msg
