@@ -1,0 +1,27 @@
+.pa-jumbo {
+    background: #D4F2DB;
+}
+
+.pa-form {
+    box-shadow: 1px 1px 5px 0px #696D7D;
+    padding-bottom: 10px;
+}
+
+.pa-form .bg-danger {
+    padding: 15px;
+}
+
+.pa-form th,
+.pa-form label {
+    text-transform: capitalize;
+}
+
+.pa-chart .bar {
+    fill: #2BBC4D;
+}
+
+.pa-chart .line {
+    fill: none;
+    stroke: #02182B;
+    stroke-width: 2px
+}

@@ -100,9 +100,9 @@ theTable deleteRow model =
         table [ class "table table-striped" ] [
             thead [] [
                 tr [] [
-                    th [] [ text "name" ],
+                    th [] [ text "factor" ],
                     th [] [ text "value" ],
-                    th [] [ text "percentage" ],
+                    th [] [ text "pct." ],
                     th [] []
                 ]
             ],
@@ -120,7 +120,7 @@ theForm: ( Msg, String -> Msg, String -> Msg ) -> Model -> Html Msg
 theForm ( addRow, nameChange, valueChange ) model =
     form [ onSubmit addRow ] [
         div [ class "form-group" ] [
-            label [] [ text "name" ],
+            label [] [ text "factor" ],
             input [ class "form-control", value ( withDefault "" model.cn ), onInput nameChange ] []
         ],
         div [ class "form-group" ] [
@@ -150,16 +150,16 @@ theNotifications model =
 view: Model -> Html Msg
 view model =
    div [ class "container" ] [
-        div [ class "jumbotron" ] [
+        div [ class "jumbotron pa-jumbo" ] [
             h1 [] [ text "Pareto diagram generator" ]
         ],
-        div [ class "col-md-3 example-form" ] [
+        div [ class "col-md-4 pa-form" ] [
             theTable DeleteRow model,
             theForm ( AddRow, NameChange, ValueChange ) model,
             theNotifications model
        ],
-       div [ class "col-md-9" ] [
-           Svg.svg [ Svg.Attributes.height "360", Svg.Attributes.width "540" ] []
+       div [ class "col-md-8 pa-chart" ] [
+           Svg.svg [ Svg.Attributes.width "100%", Svg.Attributes.viewBox "0 0 750 600", Svg.Attributes.preserveAspectRatio "xMidYMid meet"] []
        ]
     ]
 

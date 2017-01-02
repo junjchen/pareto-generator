@@ -28,9 +28,9 @@ window.Renderer = (function (D3) {
         var svg = D3.select(handle);
         svg.selectAll("*").remove();
 
-        var margin = { top: 20, right: 40, bottom: 40, left: 40 };
-        var width = +svg.attr("width") - margin.left - margin.right;
-        var height = +svg.attr("height") - margin.top - margin.bottom;
+        var margin = { top: 20, right: 50, bottom: 40, left: 50 };
+        var width = 750 - margin.left - margin.right;
+        var height = 600 - margin.top - margin.bottom;
 
         var x = D3.scaleBand().range([0, width]).padding(0.1);
         var y = D3.scaleLinear().range([height, 0]);
@@ -44,15 +44,18 @@ window.Renderer = (function (D3) {
         g.append("g")
             .attr("class", "axis axis--x")
             .attr("transform", "translate(0," + height + ")")
+            .style("font-size", "1.2em")
             .call(D3.axisBottom(x));
 
         g.append("g")
             .attr("class", "axis axis--y")
+            .style("font-size", "1.2em")
             .call(D3.axisLeft(y).ticks(10));
 
         g.append("g")
             .attr("class", "axis axis--y")
             .attr("transform", "translate(" + width + ",0)")
+            .style("font-size", "1.2em")
             .call(D3.axisRight(y2).ticks(10, "%"));
 
         g.selectAll(".bar")
