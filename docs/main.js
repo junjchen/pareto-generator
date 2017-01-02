@@ -8888,7 +8888,7 @@ var _user$project$Main$theForm = F2(
 							},
 							{
 								ctor: '::',
-								_0: _elm_lang$html$Html$text('OK'),
+								_0: _elm_lang$html$Html$text('Add'),
 								_1: {ctor: '[]'}
 							}),
 						_1: {ctor: '[]'}
