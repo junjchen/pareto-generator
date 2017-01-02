@@ -151,7 +151,8 @@ view: Model -> Html Msg
 view model =
    div [ class "container" ] [
         div [ class "jumbotron pa-jumbo" ] [
-            h1 [] [ text "Pareto diagram generator" ]
+            h1 [] [ text "Pareto diagram generator" ],
+            p [] [ text "a simple pareto diagram generator powered by Elm and D3" ]
         ],
         div [ class "col-md-4 pa-form" ] [
             theTable DeleteRow model,
