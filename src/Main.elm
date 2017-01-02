@@ -1,13 +1,17 @@
+port module Main exposing (..)
+
 import Html exposing (..)
-import Html.Attributes exposing ( value, class, type_ )
+import Html.Attributes exposing ( value, class, type_, height, width )
 import Html.Events exposing ( onSubmit, onInput, onClick )
 import Maybe exposing ( Maybe(..),  withDefault )
 import Markdown exposing ( toHtml )
 import String
 import List
+import Svg
+import Svg.Attributes
 
 main =
-  Html.beginnerProgram { model = model, view = view, update = update }
+  Html.program { init = init, view = view, update = update, subscriptions= subscriptions }
 
 type alias Row = {
     n: String,
@@ -18,15 +22,16 @@ type alias Model = {
     cn: Maybe String,
     cv: Maybe String,
     e: List Error,
-    rows: List Row
+    rows: List Row,
+    chartHtml: Maybe String
 }
 
 type Msg = AddRow | NameChange String | ValueChange String | DeleteRow Row
 
-type Error = MissingName | MissingValue | InvalidValue
+type Error = MissingName | MissingValue | InvalidValue | NameExist
 
-model : Model
-model = Model Nothing Nothing [] []
+init: ( Model, Cmd Msg )
+init = ( Model Nothing Nothing [] [] Nothing, Cmd.none )
 
 updateName: Model -> String -> Model
 updateName model n = { model | cn = if String.isEmpty n then Nothing else Just n }
@@ -37,7 +42,7 @@ updateValue model v = { model | cv = if String.isEmpty v then Nothing else Just 
 validateName: Model -> Result Error String
 validateName model =
     case model.cn of
-        Just n -> Ok n
+        Just n -> if List.any (\ x -> x.n == n) model.rows then Err NameExist else Ok n
         Nothing -> Err MissingName
 
 validateValue: Model -> Result Error Float
@@ -60,22 +65,31 @@ validate model =
 toTwoDecimalPercentage: Float -> Float
 toTwoDecimalPercentage f = ( toFloat <| round ( f * 1000 )  ) / 10
 
-update: Msg -> Model -> Model
+update: Msg -> Model -> ( Model, Cmd Msg )
 update msg model = 
     case msg of
-        NameChange n -> updateName model n
-        ValueChange v -> updateValue model v
+        NameChange n -> ( updateName model n, Cmd.none )
+        ValueChange v -> ( updateValue model v, Cmd.none )
         AddRow -> 
             case validate model of
-                Ok ( n, v ) -> { model |
-                    cn = Nothing,
-                    cv = Nothing,
-                    e = [],
-                    rows = ( Row n v ) :: model.rows
-                }
-                Err e -> { model | e = e }
-        DeleteRow r -> { model | rows = List.filter (\ x-> x /= r ) model.rows }
-
+                Ok ( n, v ) -> 
+                    let
+                        rows: List Row
+                        rows = ( Row n v ) :: model.rows
+                    in
+                        ( { model |
+                            cn = Nothing,
+                            cv = Nothing,
+                            e = [],
+                            rows = rows
+                        }, genChart rows )
+                Err e -> ( { model | e = e }, Cmd.none )
+        DeleteRow r ->
+            let
+                rows: List Row
+                rows = List.filter (\ x-> x /= r ) model.rows
+            in
+              ( { model | rows = rows }, genChart rows )
 
 theTable: ( Row -> Msg ) -> Model -> Html Msg
 theTable deleteRow model =
@@ -126,20 +140,30 @@ theNotifications model =
                         MissingName -> "Name is missing"
                         MissingValue -> "Value is missing"
                         InvalidValue -> "Value is invalid"
+                        NameExist -> "Same name exists"
                     )
                 ]
             ]
         ) model.e
     )
 
-
 view: Model -> Html Msg
 view model =
-    div [ class "container" ] [
+   div [ class "container" ] [
+        div [ class "jumbotron" ] [
+            h1 [] [ text "Pareto diagram generator" ]
+        ],
         div [ class "col-md-3 example-form" ] [
             theTable DeleteRow model,
             theForm ( AddRow, NameChange, ValueChange ) model,
             theNotifications model
        ],
-       div [ class "col-md-9" ] []
+       div [ class "col-md-9" ] [
+           Svg.svg [ Svg.Attributes.height "360", Svg.Attributes.width "540" ] []
+       ]
     ]
+
+port genChart: List Row -> Cmd msg
+
+subscriptions: Model -> Sub Msg
+subscriptions model = Sub.none
